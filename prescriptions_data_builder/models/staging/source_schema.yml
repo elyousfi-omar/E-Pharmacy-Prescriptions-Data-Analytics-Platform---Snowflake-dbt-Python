@@ -2,7 +2,7 @@ sources:
   - name: source_data
     description: Raw data coming from PMS (pharmacy management system)
     database: pharmacy_db  
-    schema: public  
+    schema: public
     tables:
       - name: users
       - name: prescriptions
