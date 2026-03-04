@@ -32,6 +32,8 @@ models:
   prescriptions_data_builder:
     # Config indicated by + and applies to all files under models/example/
     dimensions:
+      +database: analytics
+      +schema: dimensions
       +materialized: table
     staging:
       +database: analytics

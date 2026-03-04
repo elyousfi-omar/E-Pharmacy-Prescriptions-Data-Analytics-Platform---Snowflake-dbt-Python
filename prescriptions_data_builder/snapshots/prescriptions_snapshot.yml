@@ -1,0 +1,11 @@
+snapshots:
+  - name: prescriptions_snapshot
+    relation: source('source_data', 'prescriptions')
+    config:
+      database: analytics
+      schema: snapshots
+      strategy: check
+      unique_key: prescription_id
+      check_cols: ['delivery_status']
+      dbt_valid_to_current: "to_date('9999-12-31')"
+      hard_deletes: ignore
