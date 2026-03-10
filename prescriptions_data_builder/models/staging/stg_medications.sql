@@ -1,4 +1,6 @@
 select
+    medication_id,
+    prescription_id,
     medication_name,
     form,
     strength,

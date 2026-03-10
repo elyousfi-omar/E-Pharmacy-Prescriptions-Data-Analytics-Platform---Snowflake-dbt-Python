@@ -1,10 +1,10 @@
 with deduped_medications as (
     select distinct * 
-    from {{ref('stg_medications')}}
+    from {{ref('stg_prescriptions_orders')}}
 ),
 dim_medications as (
 select 
-    md5(medication_name || form || strength) as medication_sk, 
+    medication_sk, 
     medication_name,
     form,
     strength,
