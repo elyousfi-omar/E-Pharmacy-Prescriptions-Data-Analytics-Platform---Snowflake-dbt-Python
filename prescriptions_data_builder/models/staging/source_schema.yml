@@ -7,3 +7,17 @@ sources:
       - name: users
       - name: prescriptions
       - name: medications
+models:
+  - name: stg_prescriptions_orders  
+    columns:
+      - name: total_amount
+        tests:
+          - not_null
+          - positive_amount
+      - name: user_id
+        tests:
+          - not_null
+      - name: medication_id
+        tests:
+          - not_null
+  
