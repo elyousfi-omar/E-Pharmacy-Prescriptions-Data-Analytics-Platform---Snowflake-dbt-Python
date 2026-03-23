@@ -14,7 +14,7 @@ users as (
 ),
 final_fact as (
     select 
-        prescription_sk as fact_sk,
+        md5(prescription_id || p.dbt_valid_from || medication_id) as fact_sk,
         medication_sk,
         u.user_sk,
         medication_id,

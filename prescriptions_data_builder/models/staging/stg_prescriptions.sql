@@ -2,7 +2,6 @@ with base_data as (
     select * from {{ref('prescriptions_snapshot')}}
 )
 select 
-        md5(prescription_id || order_date) as prescription_sk,
        prescription_id,
        user_id,
        shipping_fee,
