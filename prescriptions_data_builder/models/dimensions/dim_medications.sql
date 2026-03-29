@@ -1,26 +1,20 @@
-{{ config(
-    materialized='incremental',
-    unique_key='medication_id'
-) }}
-
-with source_medications as (
-    select *
-    from {{ ref('stg_medications') }}
+with deduped_medications as (
+    select distinct medication_sk, medication_name, form, strength, drug_identification_number
+    from {{ref('stg_prescriptions_orders')}}
 ),
 dim_medications as (
     select
-        md5(medication_name || form || strength || drug_identification_number) as medication_sk,
-        medication_id,
+        medication_sk,
         medication_name,
         form,
         strength,
         drug_identification_number,
         current_timestamp as added_at
-    from source_medications
+    from deduped_medications
     {% if is_incremental() %}
         -- Only insert medications that do NOT already exist
-        where medication_id not in (
-            select medication_id from {{ this }}
+        where din not in (
+            select din from {{ this }}
         )
     {% endif %}
 )

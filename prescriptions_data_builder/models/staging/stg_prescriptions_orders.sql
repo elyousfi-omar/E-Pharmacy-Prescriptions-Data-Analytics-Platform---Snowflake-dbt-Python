@@ -12,7 +12,7 @@ prescription_orders as (
             p.prescription_id ||
             p.dbt_valid_from
         ) as prescription_sk,
-        md5(m.medication_name || m.form || m.strength) as medication_sk, 
+        md5(medication_name || form || strength || drug_identification_number) as medication_sk,
         p.prescription_id,
         m.medication_id,
         m.medication_name,
