@@ -1,4 +1,5 @@
 # E-Pharmacy Prescriptions Data Analytics Platform
+## Portfolio Project: DBT + Snowflake + Python
 
 A complete end-to-end data warehouse solution enabling an e-pharmacy to track prescription lifecycles, monitor operational performance, and drive data-informed business decisions.
 
