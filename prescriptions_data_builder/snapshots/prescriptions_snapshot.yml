@@ -1,0 +1,50 @@
+# =====================================================
+# Prescriptions Snapshot Configuration
+# =====================================================
+# Slowly Changing Dimension (SCD) Type 2 for Prescriptions
+# Tracks changes to delivery_status and maintains historical records
+
+snapshots:
+  - name: prescriptions_snapshot
+    description: |
+      Snapshot of prescription orders with historical tracking.
+      Captures delivery status changes over time using SCD Type 2.
+      
+      **Change Tracking**: Monitors delivery_status field
+      **Grain**: One row per prescription per status change
+      **Update Frequency**: Daily
+      **Retention**: Unlimited historical records
+      
+      Use this snapshot to analyze:
+      - Prescription delivery status transitions
+      - Time spent in each status
+      - Fulfillment performance metrics
+    
+    relation: source('source_data', 'prescriptions')
+    config:
+      database: analytics
+      schema: snapshots
+      
+      # SCD Type 2 Configuration
+      strategy: check  # Triggers snapshot when checked columns change
+      unique_key: prescription_id
+      check_cols: ['delivery_status']  # Monitor this column for changes
+      
+      # Validity Date Configuration
+      dbt_valid_to_current: "to_date('9999-12-31')"
+      hard_deletes: ignore  # Retains deleted records with end date
+    
+    # Column Definitions
+    columns:
+      - name: prescription_id
+        description: "Unique prescription identifier (foreign key)"
+      - name: delivery_status
+        description: "Current delivery status (tracked for changes)"
+      - name: dbt_scd_id
+        description: "Surrogate key for SCD type 2 record"
+      - name: dbt_valid_from
+        description: "Start date of this record version"
+      - name: dbt_valid_to
+        description: "End date of this record version (null for current)"
+      - name: dbt_updated_at
+        description: "Timestamp when this record was created"

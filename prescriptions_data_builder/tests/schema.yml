@@ -1,0 +1,5 @@
+data_tests:
+  - name: assert_fact_sk_uniqueness
+    description: >
+      The fact_sk should be unique for each record in the fact table.
+      Therefore return records where fact_sk is not unique to make the test fail.

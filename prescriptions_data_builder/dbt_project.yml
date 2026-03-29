@@ -1,16 +1,24 @@
+# =====================================================
+# Prescriptions Data Builder - dbt Project Configuration
+# =====================================================
+# Project: Pharmacy Management System Data Analytics
+# Purpose: Transform raw PMS data into analytics-ready dimensions and facts
+# Owner: Analytics Team
+# Last Updated: 2026-03-29
 
-# Name your project! Project names should contain only lowercase characters
-# and underscores. A good package name should reflect your organization's
-# name or the intended use of these models
 name: 'prescriptions_data_builder'
 version: '1.0.0'
+config-version: 2
 
-# This setting configures which "profile" dbt uses for this project.
+# dbt Version Requirements
+require-dbt-version: [">=1.5.0", "<2.0.0"]
+
+# Profile Configuration
 profile: 'prescriptions_data_builder'
 
-# These configurations specify where dbt should look for different types of files.
-# The `model-paths` config, for example, states that models in this project can be
-# found in the "models/" directory. You probably won't need to change these!
+# =====================================================
+# Directory Paths Configuration
+# =====================================================
 model-paths: ["models"]
 analysis-paths: ["analyses"]
 test-paths: ["tests"]
@@ -23,14 +31,35 @@ clean-targets:         # directories to be removed by `dbt clean`
   - "dbt_packages"
 
 
-# Configuring models
-# Full documentation: https://docs.getdbt.com/docs/configuring-models
+# =====================================================
+# Models Configuration
+# =====================================================
+# Configures materialization and database/schema targets for model layers
+# Can be overridden at individual model level using {{ config(...) }} macro
 
-# In this example config, we tell dbt to build all models in the example/
-# directory as views. These settings can be overridden in the individual model
-# files using the `{{ config(...) }}` macro.
 models:
   prescriptions_data_builder:
-    # Config indicated by + and applies to all files under models/example/
-    example:
+    staging:
+      +description: "Staging layer - cleaned and standardized raw data"
+      +database: analytics
+      +schema: staging
       +materialized: view
+      +tags: [staging]
+    
+    dimensions:
+      +description: "Dimension tables for analytics - slowly changing dimensions (SCD Type 2)"
+      +database: analytics
+      +schema: dimensions
+      +materialized: table
+      +tags: [dimensions]
+      +indexes:
+        - columns: [user_id, medication_id]
+    
+    fact:
+      +description: "Fact tables for analytics - prescription transactions"
+      +database: analytics
+      +schema: fact
+      +materialized: table
+      +tags: [facts]
+      +indexes:
+        - columns: [prescription_id, user_id, medication_id]

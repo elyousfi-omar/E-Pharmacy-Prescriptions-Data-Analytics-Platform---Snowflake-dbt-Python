@@ -1,0 +1,59 @@
+# =====================================================
+# Users Snapshot Configuration
+# =====================================================
+# Slowly Changing Dimension (SCD) Type 2 for Users
+# Tracks changes to user profile information and maintains full history
+
+snapshots:
+  - name: users_snapshot
+    description: |
+      Snapshot of user/patient master data with historical tracking.
+      Captures changes to profile information using SCD Type 2.
+      
+      **Change Tracking**: Monitors name, email, phone, and address fields
+      **Grain**: One row per user per profile change
+      **Update Frequency**: Daily
+      **Retention**: Unlimited historical records
+      
+      Use this snapshot to analyze:
+      - User profile update history
+      - Contact information changes
+      - Address/shipping changes
+      - User account lifecycle events
+    
+    relation: source('source_data', 'users')
+    config:
+      database: analytics
+      schema: snapshots
+      
+      # SCD Type 2 Configuration
+      strategy: check  # Triggers snapshot when checked columns change
+      unique_key: user_id
+      check_cols: ['name', 'email', 'phone', 'address']  # Monitor for changes
+      
+      # Validity Date Configuration
+      dbt_valid_to_current: "to_date('9999-12-31')"
+      hard_deletes: ignore  # Retains deleted records with end date
+    
+    # Column Definitions
+    columns:
+      - name: user_id
+        description: "Unique user identifier (foreign key)"
+      - name: name
+        description: "User's full name (tracked for changes)"
+      - name: email
+        description: "User's email address (tracked for changes)"
+      - name: phone
+        description: "User's contact phone number (tracked for changes)"
+      - name: address
+        description: "User's address for delivery (tracked for changes)"
+      - name: joined_at
+        description: "Original account creation timestamp"
+      - name: dbt_scd_id
+        description: "Surrogate key for SCD type 2 record"
+      - name: dbt_valid_from
+        description: "Start date of this record version"
+      - name: dbt_valid_to
+        description: "End date of this record version (null for current)"
+      - name: dbt_updated_at
+        description: "Timestamp when this record was created"

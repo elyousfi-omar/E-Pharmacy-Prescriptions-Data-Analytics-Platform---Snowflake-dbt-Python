@@ -1,0 +1,226 @@
+# =====================================================
+# Source and Staging Models Documentation
+# =====================================================
+# Defines raw data sources from PMS and staging transformations
+
+sources:
+  - name: source_data
+    description: |
+      Raw data extracted from Pharmacy Management System (PMS).
+      Source of truth for all data transformations.
+      Updated daily via automated ETL process.
+    database: pharmacy_db
+    schema: public
+    meta:
+      owner: "Data Engineering Team"
+    
+    tables:
+      - name: users
+        description: |
+          User/patient master data from PMS.
+          Contains biographical information for all registered users.
+          SCD Type 2 enabled to track historical changes.
+        freshness:
+          warn_after: {count: 12, period: hour}
+          error_after: {count: 24, period: hour}
+        loaded_at_field: null
+        columns:
+          - name: user_id
+            description: "Unique identifier for user (primary key)"
+            tests:
+              - unique
+              - not_null
+          - name: name
+            description: "Full name of the user"
+            tests:
+              - not_null
+          - name: email
+            description: "Email address for user communication"
+            tests:
+              - unique
+              - not_null
+          - name: phone
+            description: "Contact phone number"
+          - name: address
+            description: "Physical address for delivery"
+          - name: joined_at
+            description: "Timestamp when user joined the system"
+            tests:
+              - not_null
+      
+      - name: prescriptions
+        description: |
+          Prescription orders placed by users.
+          Contains all prescription transaction details including amounts and delivery status.
+          SCD Type 2 enabled to track delivery status changes.
+        freshness:
+          warn_after: {count: 12, period: hour}
+          error_after: {count: 24, period: hour}
+        loaded_at_field: null
+        columns:
+          - name: prescription_id
+            description: "Unique identifier for prescription (primary key)"
+            tests:
+              - unique
+              - not_null
+          - name: user_id
+            description: "Foreign key to users table"
+            tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: source('source_data', 'users')
+                    field: user_id
+          - name: shipping_fee
+            description: "Delivery/shipping cost in currency units"
+          - name: sub_total
+            description: "Subtotal amount excluding shipping and discounts"
+          - name: insured_amount
+            description: "Amount covered by insurance/subsidy"
+          - name: total_amount
+            description: "Final total amount after all adjustments"
+            tests:
+              - not_null
+              - positive_amount
+          - name: shipping_partner
+            description: "Name of delivery/logistics partner"
+          - name: delivery_status
+            description: "Current delivery status (pending, in-transit, delivered, failed)"
+          - name: order_date
+            description: "Date when prescription was ordered"
+            tests:
+              - not_null
+          - name: delivery_date
+            description: "Actual/expected delivery date"
+      
+      - name: medications
+        description: |
+          Medication/drug master data catalog.
+          Contains medication attributes including form, strength, and regulatory identifiers.
+        freshness:
+          warn_after: {count: 12, period: hour}
+          error_after: {count: 24, period: hour}
+        loaded_at_field: null
+        columns:
+          - name: medication_id
+            description: "Unique identifier for medication (primary key)"
+            tests:
+              - unique
+              - not_null
+          - name: prescription_id
+            description: "Foreign key linking to prescriptions"
+            tests:
+              - not_null
+          - name: medication_name
+            description: "Generic or brand name of the medication"
+            tests:
+              - not_null
+          - name: form
+            description: "Pharmaceutical form (tablet, capsule, liquid, etc.)"
+          - name: strength
+            description: "Dosage strength and unit (e.g., 500mg, 10ml)"
+          - name: din
+            description: "Drug Identification Number (regulatory identifier)"
+            tests:
+              - not_null
+
+# =====================================================
+# Staging Models
+# =====================================================
+models:
+  - name: stg_prescriptions_orders
+    description: |
+      Joined staging table combining prescription and medication data.
+      Grain: One row per medication per prescription.
+      Includes surrogate keys for dimensions and snapshot SCD tracking.
+    columns:
+      - name: prescription_sk
+        description: "Surrogate key for prescription (MD5 hash)"
+        tests:
+          - not_null
+      - name: prescription_id
+        description: "Natural key to prescriptions"
+        tests:
+          - not_null
+      - name: medication_id
+        description: "Natural key to medications"
+        tests:
+          - not_null
+      - name: user_id
+        description: "Natural key to users"
+        tests:
+          - not_null
+      - name: total_amount
+        description: "Total prescription amount"
+        tests:
+          - not_null
+      - name: delivery_status
+        description: "Current delivery status"
+        tests:
+          - not_null
+  
+  - name: stg_prescriptions
+    description: |
+      Cleaned and standardized prescriptions from source snapshot.
+      Includes SCD type 2 tracking columns for dimensional analysis.
+    columns:
+      - name: prescription_id
+        description: "Unique prescription identifier"
+        tests:
+          - not_null
+      - name: user_id
+        description: "User who placed the prescription"
+        tests:
+          - not_null
+      - name: total_amount
+        description: "Total prescription amount"
+        tests:
+          - not_null
+      - name: delivery_status
+        description: "Current delivery status"
+      - name: order_date
+        description: "Date prescription was ordered"
+        tests:
+          - not_null
+  
+  - name: stg_medications
+    description: |
+      Deduplicated medication dimension data sourced from source medications table.
+      Grain: One row per unique medication.
+    columns:
+      - name: medication_id
+        description: "Unique medication identifier"
+        tests:
+          - unique
+          - not_null
+      - name: medication_name
+        description: "Medication name"
+        tests:
+          - not_null
+      - name: form
+        description: "Pharmaceutical form"
+      - name: strength
+        description: "Dosage strength"
+      - name: drug_identification_number
+        description: "Regulatory drug identification number (DIN)"
+        tests:
+          - not_null
+  
+  - name: stg_users
+    description: |
+      Cleaned user dimension data from users snapshot.
+      Includes SCD type 2 tracking for historical analysis.
+    columns:
+      - name: user_id
+        description: "Unique user identifier"
+        tests:
+          - not_null
+      - name: full_name
+        description: "User's full name"
+      - name: email
+        description: "User's email address"
+        tests:
+          - not_null
+      - name: phone_number
+        description: "User's contact phone number"
+  
